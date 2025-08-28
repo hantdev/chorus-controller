@@ -1,0 +1,56 @@
+# Swag configuration file
+# This file configures how swag generates the Swagger documentation
+
+# Output directory for generated files
+outputDir = "./docs"
+
+# Main file path
+mainFile = "./cmd/main.go"
+
+# Parse vendor directory
+parseVendor = false
+
+# Parse dependency
+parseDependency = false
+
+# Parse internal packages
+parseInternal = false
+
+# Parse depth
+parseDepth = 1
+
+# Instance name
+instanceName = "swagger"
+
+# Markdown files directory
+markdownFilesDir = ""
+
+# Generated time
+generatedTime = true
+
+# Parse Go list errors
+parseGoList = false
+
+# Parse vendor
+parseVendor = false
+
+# Parse dependency
+parseDependency = false
+
+# Parse internal
+parseInternal = false
+
+# Parse depth
+parseDepth = 1
+
+# Instance name
+instanceName = "swagger"
+
+# Markdown files directory
+markdownFilesDir = ""
+
+# Generated time
+generatedTime = true
+
+# Parse Go list errors
+parseGoList = false

@@ -1,0 +1,442 @@
+basePath: /
+definitions:
+  api.CreateReplicationRequest:
+    properties:
+      agent_url:
+        type: string
+      buckets:
+        items:
+          type: string
+        type: array
+      from:
+        type: string
+      to:
+        type: string
+      to_bucket:
+        type: string
+      user:
+        type: string
+    required:
+    - from
+    - to
+    - user
+    type: object
+  api.UpsertStorage:
+    properties:
+      address:
+        type: string
+      credentials:
+        additionalProperties:
+          properties:
+            access_key:
+              type: string
+            secret_key:
+              type: string
+          type: object
+        type: object
+      default_region:
+        type: string
+      health_check_interval:
+        type: string
+      http_timeout:
+        type: string
+      is_main:
+        type: boolean
+      is_secure:
+        type: boolean
+      name:
+        type: string
+      provider:
+        type: string
+      rate_limit:
+        properties:
+          enable:
+            type: boolean
+          rpm:
+            type: integer
+        type: object
+    required:
+    - address
+    - credentials
+    - name
+    - provider
+    type: object
+  api.replicationIdent:
+    properties:
+      bucket:
+        type: string
+      from:
+        type: string
+      to:
+        type: string
+      to_bucket:
+        type: string
+      user:
+        type: string
+    required:
+    - bucket
+    - from
+    - to
+    - user
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: A control plane for Chorus Worker that manages S3 replication jobs
+  title: Chorus Controller API
+  version: "1.0"
+paths:
+  /buckets:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of buckets that can be used for replication jobs
+        between specified storages
+      parameters:
+      - description: User identifier
+        in: query
+        name: user
+        type: string
+      - description: Source storage name
+        in: query
+        name: from
+        type: string
+      - description: Destination storage name
+        in: query
+        name: to
+        type: string
+      - description: Whether to show already replicated buckets
+        in: query
+        name: show_replicated
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List buckets available for replication
+      tags:
+      - buckets
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns the health status of the controller
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - health
+  /replications:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a replication job
+      parameters:
+      - description: Replication identifier
+        in: body
+        name: replication
+        required: true
+        schema:
+          $ref: '#/definitions/api.replicationIdent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Replication deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a replication job
+      tags:
+      - replications
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all configured replication jobs with their statuses
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: object
+            type: array
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all replication jobs
+      tags:
+      - replications
+    post:
+      consumes:
+      - application/json
+      description: Configures a new replication job for specified buckets between
+        storages
+      parameters:
+      - description: Replication configuration
+        in: body
+        name: replication
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateReplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Replication job created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new replication job
+      tags:
+      - replications
+  /replications/pause:
+    post:
+      consumes:
+      - application/json
+      description: Pauses an active replication job
+      parameters:
+      - description: Replication identifier
+        in: body
+        name: replication
+        required: true
+        schema:
+          $ref: '#/definitions/api.replicationIdent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Replication paused successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Pause a replication job
+      tags:
+      - replications
+  /replications/resume:
+    post:
+      consumes:
+      - application/json
+      description: Resumes a paused replication job
+      parameters:
+      - description: Replication identifier
+        in: body
+        name: replication
+        required: true
+        schema:
+          $ref: '#/definitions/api.replicationIdent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Replication resumed successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Resume a paused replication job
+      tags:
+      - replications
+  /replications/switch/zero-downtime:
+    post:
+      consumes:
+      - application/json
+      description: Switches main and follower buckets for a replication job without
+        blocking writes
+      parameters:
+      - description: Replication identifier
+        in: body
+        name: replication
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Switch initiated successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Switch main and follower buckets without downtime
+      tags:
+      - replications
+  /storages:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all configured storage backends
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all storages
+      tags:
+      - storages
+    post:
+      consumes:
+      - application/json
+      description: Adds a new storage configuration at runtime
+      parameters:
+      - description: Storage configuration
+        in: body
+        name: storage
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpsertStorage'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Storage created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new storage
+      tags:
+      - storages
+  /storages/{name}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a storage configuration by name
+      parameters:
+      - description: Storage name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Storage deleted successfully
+          schema:
+            type: string
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a storage
+      tags:
+      - storages
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing storage configuration at runtime
+      parameters:
+      - description: Storage name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Updated storage configuration
+        in: body
+        name: storage
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpsertStorage'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Storage updated successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update an existing storage
+      tags:
+      - storages
+schemes:
+- http
+swagger: "2.0"
