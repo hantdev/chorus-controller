@@ -16,8 +16,11 @@ import (
 	"log"
 
 	"github.com/hantdev/chorus-controller/internal/config"
-	httpserver "github.com/hantdev/chorus-controller/internal/http"
-	"github.com/hantdev/chorus-controller/internal/worker"
+	"github.com/hantdev/chorus-controller/internal/db"
+	"github.com/hantdev/chorus-controller/internal/handler"
+	"github.com/hantdev/chorus-controller/internal/repository"
+	"github.com/hantdev/chorus-controller/internal/server"
+	"github.com/hantdev/chorus-controller/internal/service"
 
 	docs "github.com/hantdev/chorus-controller/docs"
 )
@@ -27,8 +30,32 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	w := worker.New(cfg.WorkerGRPCAddr)
-	srv := httpserver.New(w, cfg.HTTPPort)
+
+	// Initialize DB
+	_, err = db.Open(cfg.PostgresDSN)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Note: AutoMigrate is disabled in favor of Atlas migrations
+	// Run 'make migrate-up' to apply migrations
+	// if err := database.AutoMigrate(&domain.Storage{}, &domain.StorageCredential{}, &domain.ReplicateJob{}); err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// Initialize repository layer
+	workerRepo := repository.NewWorkerRepository(cfg.WorkerGRPCAddr)
+
+	// Initialize service layer
+	replicationService := service.NewReplicationService(workerRepo)
+	storageService := service.NewStorageService(workerRepo)
+
+	// Initialize handler layer
+	healthHandler := handler.NewHealthHandler()
+	storageHandler := handler.NewStorageHandler(storageService)
+	replicationHandler := handler.NewReplicationHandler(replicationService)
+
+	// Initialize server
+	srv := server.New(healthHandler, storageHandler, replicationHandler, cfg.HTTPPort)
 
 	// Configure Swagger runtime options
 	docs.SwaggerInfo.BasePath = "/"

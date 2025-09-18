@@ -147,7 +147,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.CreateReplicationRequest"
+                            "$ref": "#/definitions/domain.CreateReplicationRequest"
                         }
                     }
                 ],
@@ -193,7 +193,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.replicationIdent"
+                            "$ref": "#/definitions/domain.ReplicationIdentifier"
                         }
                     }
                 ],
@@ -241,7 +241,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.replicationIdent"
+                            "$ref": "#/definitions/domain.ReplicationIdentifier"
                         }
                     }
                 ],
@@ -289,7 +289,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.replicationIdent"
+                            "$ref": "#/definitions/domain.ReplicationIdentifier"
                         }
                     }
                 ],
@@ -337,7 +337,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/domain.ReplicationIdentifier"
                         }
                     }
                 ],
@@ -396,7 +396,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Adds a new storage configuration at runtime",
+                "description": "Creates a storage with simplified parameters. All other settings use default values.",
                 "consumes": [
                     "application/json"
                 ],
@@ -406,15 +406,15 @@ const docTemplate = `{
                 "tags": [
                     "storages"
                 ],
-                "summary": "Create a new storage",
+                "summary": "Create a storage configuration",
                 "parameters": [
                     {
-                        "description": "Storage configuration",
-                        "name": "storage",
+                        "description": "Storage creation request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.UpsertStorage"
+                            "$ref": "#/definitions/domain.CreateStorageRequest"
                         }
                     }
                 ],
@@ -431,48 +431,59 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
-                    },
-                    "502": {
-                        "description": "Bad Gateway",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
                     }
                 }
             }
         },
-        "/storages/{name}": {
-            "delete": {
-                "description": "Deletes a storage configuration by name",
-                "consumes": [
-                    "application/json"
-                ],
+        "/storages/db": {
+            "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "storages"
                 ],
-                "summary": "Delete a storage",
+                "summary": "List storages from DB",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Storage"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/storages/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "storages"
+                ],
+                "summary": "Get storage by ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Storage name",
-                        "name": "name",
+                        "description": "Storage ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Storage deleted successfully",
+                        "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/domain.Storage"
                         }
                     },
-                    "502": {
-                        "description": "Bad Gateway",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -480,8 +491,8 @@ const docTemplate = `{
                     }
                 }
             },
-            "patch": {
-                "description": "Updates an existing storage configuration at runtime",
+            "put": {
+                "description": "Updates an existing storage with new parameters",
                 "consumes": [
                     "application/json"
                 ],
@@ -491,22 +502,22 @@ const docTemplate = `{
                 "tags": [
                     "storages"
                 ],
-                "summary": "Update an existing storage",
+                "summary": "Update a storage configuration",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Storage name",
-                        "name": "name",
+                        "description": "Storage ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Updated storage configuration",
-                        "name": "storage",
+                        "description": "Storage update request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.UpsertStorage"
+                            "$ref": "#/definitions/domain.CreateStorageRequest"
                         }
                     }
                 ],
@@ -524,8 +535,42 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "502": {
-                        "description": "Bad Gateway",
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a storage and all its credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "storages"
+                ],
+                "summary": "Delete a storage configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Storage ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Storage deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -536,7 +581,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.CreateReplicationRequest": {
+        "domain.CreateReplicationRequest": {
             "type": "object",
             "required": [
                 "from",
@@ -567,67 +612,44 @@ const docTemplate = `{
                 }
             }
         },
-        "api.UpsertStorage": {
+        "domain.CreateStorageRequest": {
             "type": "object",
             "required": [
+                "access_key",
                 "address",
-                "credentials",
                 "name",
-                "provider"
+                "provider",
+                "secret_key",
+                "user"
             ],
             "properties": {
+                "access_key": {
+                    "type": "string",
+                    "example": "AKIA123"
+                },
                 "address": {
-                    "type": "string"
-                },
-                "credentials": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "object",
-                        "properties": {
-                            "access_key": {
-                                "type": "string"
-                            },
-                            "secret_key": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "default_region": {
-                    "type": "string"
-                },
-                "health_check_interval": {
-                    "type": "string"
-                },
-                "http_timeout": {
-                    "type": "string"
-                },
-                "is_main": {
-                    "type": "boolean"
-                },
-                "is_secure": {
-                    "type": "boolean"
+                    "type": "string",
+                    "example": "http://localhost:9000"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "my-storage"
                 },
                 "provider": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "minio"
                 },
-                "rate_limit": {
-                    "type": "object",
-                    "properties": {
-                        "enable": {
-                            "type": "boolean"
-                        },
-                        "rpm": {
-                            "type": "integer"
-                        }
-                    }
+                "secret_key": {
+                    "type": "string",
+                    "example": "SECRET123"
+                },
+                "user": {
+                    "type": "string",
+                    "example": "myuser"
                 }
             }
         },
-        "api.replicationIdent": {
+        "domain.ReplicationIdentifier": {
             "type": "object",
             "required": [
                 "bucket",
@@ -646,6 +668,70 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "to_bucket": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Storage": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "credentials": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.StorageCredential"
+                    }
+                },
+                "default_region": {
+                    "type": "string"
+                },
+                "health_check_interval_ms": {
+                    "type": "integer"
+                },
+                "http_timeout_ms": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_main": {
+                    "type": "boolean"
+                },
+                "is_secure": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "rate_limit_enabled": {
+                    "type": "boolean"
+                },
+                "rate_limit_rpm": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.StorageCredential": {
+            "type": "object",
+            "properties": {
+                "access_key_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "secret_access_key": {
+                    "type": "string"
+                },
+                "storage_id": {
                     "type": "string"
                 },
                 "user": {

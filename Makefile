@@ -1,5 +1,3 @@
-# Chorus Controller Makefile
-
 # Variables
 BINARY_NAME=controller
 BUILD_DIR=build
@@ -191,6 +189,69 @@ docker-run:
 	@echo "Running Docker container..."
 	docker run -p 8081:8081 $(BINARY_NAME):latest
 
+# Migration targets
+.PHONY: migrate-up
+migrate-up: ## Apply all migrations
+	@echo "Applying migrations..."
+	@if command -v atlas > /dev/null; then \
+		atlas migrate apply --env local; \
+	else \
+		echo "Atlas CLI not found. Installing Atlas..."; \
+		curl -sSf https://atlasgo.sh | sh; \
+		atlas migrate apply --env local; \
+	fi
+
+.PHONY: migrate-down
+migrate-down: ## Rollback last migration
+	@echo "Rolling back last migration..."
+	@if command -v atlas > /dev/null; then \
+		atlas migrate down --env local; \
+	else \
+		echo "Atlas CLI not found. Please install Atlas first."; \
+		exit 1; \
+	fi
+
+.PHONY: migrate-status
+migrate-status: ## Show migration status
+	@echo "Migration status:"
+	@if command -v atlas > /dev/null; then \
+		atlas migrate status --env local; \
+	else \
+		echo "Atlas CLI not found. Please install Atlas first."; \
+		exit 1; \
+	fi
+
+.PHONY: migrate-new
+migrate-new: ## Create new migration file
+	@echo "Creating new migration..."
+	@if command -v atlas > /dev/null; then \
+		read -p "Enter migration name: " name; \
+		atlas migrate new $$name --env local; \
+	else \
+		echo "Atlas CLI not found. Please install Atlas first."; \
+		exit 1; \
+	fi
+
+.PHONY: migrate-baseline
+migrate-baseline: ## Baseline existing database
+	@echo "Baselining existing database..."
+	@if command -v atlas > /dev/null; then \
+		atlas migrate baseline --env local; \
+	else \
+		echo "Atlas CLI not found. Please install Atlas first."; \
+		exit 1; \
+	fi
+
+.PHONY: migrate-hash
+migrate-hash: ## Generate migration checksums
+	@echo "Generating migration checksums..."
+	@if command -v atlas > /dev/null; then \
+		atlas migrate hash --env local; \
+	else \
+		echo "Atlas CLI not found. Please install Atlas first."; \
+		exit 1; \
+	fi
+
 # Help target
 .PHONY: help
 help:
@@ -211,6 +272,12 @@ help:
 	@echo "  vet            - Run go vet"
 	@echo "  security       - Check for security vulnerabilities"
 	@echo "  mocks          - Generate mock files"
+	@echo "  migrate-up     - Apply all migrations"
+	@echo "  migrate-down   - Rollback last migration"
+	@echo "  migrate-status - Show migration status"
+	@echo "  migrate-new    - Create new migration file"
+	@echo "  migrate-baseline - Baseline existing database"
+	@echo "  migrate-hash   - Generate migration checksums"
 	@echo "  swagger        - Generate Swagger documentation"
 	@echo "  swagger-clean  - Clean generated Swagger documentation"
 	@echo "  swagger-serve  - Serve Swagger documentation"

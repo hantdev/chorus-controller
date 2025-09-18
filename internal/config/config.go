@@ -8,6 +8,7 @@ import (
 type Config struct {
 	WorkerGRPCAddr string
 	HTTPPort       int
+	PostgresDSN    string
 }
 
 func getenv(key, def string) string {
@@ -20,6 +21,7 @@ func getenv(key, def string) string {
 func New() (*Config, error) {
 	cfg := &Config{
 		WorkerGRPCAddr: getenv("WORKER_GRPC_ADDR", "localhost:9670"),
+		PostgresDSN:    getenv("POSTGRES_DSN", "postgres://postgres:postgres@localhost:5432/chorus?sslmode=disable"),
 	}
 	port := getenv("HTTP_PORT", "8081")
 	var p int
