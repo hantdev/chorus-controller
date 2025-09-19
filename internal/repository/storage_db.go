@@ -23,13 +23,13 @@ func (r *StorageDBRepository) Create(ctx context.Context, s *domain.Storage) err
 
 func (r *StorageDBRepository) List(ctx context.Context) ([]domain.Storage, error) {
 	var items []domain.Storage
-	err := db.DB().WithContext(ctx).Preload("Credentials").Order("name asc").Find(&items).Error
+	err := db.DB().WithContext(ctx).Order("name asc").Find(&items).Error
 	return items, err
 }
 
 func (r *StorageDBRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Storage, error) {
 	var s domain.Storage
-	err := db.DB().WithContext(ctx).Preload("Credentials").Where("id = ?", id).First(&s).Error
+	err := db.DB().WithContext(ctx).Where("id = ?", id).First(&s).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, gorm.ErrRecordNotFound

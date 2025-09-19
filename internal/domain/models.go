@@ -43,30 +43,23 @@ type ListBucketsRequest struct {
 
 // Storage represents a storage configuration persisted in DB
 // Mirrors fields from chorus-worker's s3.Storage and adds Name
-// Credentials are stored in a separate table linked by StorageID.
+// Each storage has one user with embedded credentials
 type Storage struct {
-	ID                    uuid.UUID           `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name                  string              `gorm:"uniqueIndex;size:255;not null" json:"name"`
-	Address               string              `gorm:"size:1024;not null" json:"address"`
-	Provider              string              `gorm:"size:64;not null" json:"provider"`
-	IsMain                bool                `json:"is_main"`
-	IsSecure              bool                `json:"is_secure"`
-	DefaultRegion         string              `gorm:"size:128" json:"default_region"`
-	HealthCheckIntervalMs int64               `json:"health_check_interval_ms"`
-	HttpTimeoutMs         int64               `json:"http_timeout_ms"`
-	RateLimitEnabled      bool                `json:"rate_limit_enabled"`
-	RateLimitRPM          int                 `json:"rate_limit_rpm"`
-	Credentials           []StorageCredential `json:"credentials"`
-}
-
-// StorageCredential holds per-user credentials for a storage
-// Unique per (StorageID, User).
-type StorageCredential struct {
-	ID              uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	StorageID       uuid.UUID `gorm:"type:uuid;index;not null" json:"storage_id"`
-	User            string    `gorm:"size:255;not null" json:"user"`
-	AccessKeyID     string    `gorm:"size:255;not null" json:"access_key_id"`
-	SecretAccessKey string    `gorm:"size:255;not null" json:"secret_access_key"`
+	ID                    uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name                  string    `gorm:"uniqueIndex;size:255;not null" json:"name"`
+	Address               string    `gorm:"size:1024;not null" json:"address"`
+	Provider              string    `gorm:"size:64;not null" json:"provider"`
+	IsMain                bool      `json:"is_main"`
+	IsSecure              bool      `json:"is_secure"`
+	DefaultRegion         string    `gorm:"size:128" json:"default_region"`
+	HealthCheckIntervalMs int64     `json:"health_check_interval_ms"`
+	HttpTimeoutMs         int64     `json:"http_timeout_ms"`
+	RateLimitEnabled      bool      `json:"rate_limit_enabled"`
+	RateLimitRPM          int       `json:"rate_limit_rpm"`
+	User                  string    `gorm:"size:255;not null" json:"user"`
+	AccessKeyID           string    `gorm:"size:255;not null" json:"access_key_id"`
+	SecretAccessKey       string    `gorm:"size:255;not null" json:"secret_access_key"`
+	Description           string    `gorm:"size:500" json:"description"`
 }
 
 // ReplicateJob represents a replication job persisted in DB

@@ -11,6 +11,47 @@ LDFLAGS=-ldflags "-X main.Version=$(shell git describe --tags --always --dirty) 
 .PHONY: all
 all: clean build
 
+# Database migration targets
+.PHONY: migrate-gen
+migrate-gen:
+	@if [ -z "$(NAME)" ]; then \
+		echo "Usage: make migrate-gen NAME=<migration_name>"; \
+		echo "Example: make migrate-gen NAME=add_user_table"; \
+		exit 1; \
+	fi
+	@echo "Generating migration: $(NAME)"
+	@echo "Step 1: Generating schema from GORM models..."
+	@go run cmd/schema/main.go schema.sql
+	@echo "Step 2: Creating migration with Atlas..."
+	@GOWORK=off atlas migrate diff "$(NAME)" \
+		--dir "file://migrations" \
+		--to "file://schema.sql" \
+		--dev-url "docker://postgres/16/dev?search_path=public"
+	@echo "Step 3: Cleaning up..."
+	@rm -f schema.sql
+	@echo "✅ Migration generated successfully!"
+
+.PHONY: migrate-apply
+migrate-apply:
+	@echo "Applying migrations..."
+	@GOWORK=off atlas migrate apply --env local
+
+.PHONY: migrate-status
+migrate-status:
+	@echo "Migration status:"
+	@GOWORK=off atlas migrate status --env local
+
+.PHONY: migrate-hash
+migrate-hash:
+	@echo "Updating migration hash..."
+	@GOWORK=off atlas migrate hash --dir "file://migrations"
+
+.PHONY: migrate-reset
+migrate-reset:
+	@echo "⚠️  WARNING: This will drop all tables and recreate them!"
+	@read -p "Are you sure? (y/N): " confirm && [ "$$confirm" = "y" ]
+	@GOWORK=off atlas migrate apply --env local --baseline 0
+
 # Build the application
 .PHONY: build
 build:

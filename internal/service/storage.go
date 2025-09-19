@@ -78,13 +78,9 @@ func (s *StorageService) CreateStorageFromRequest(ctx context.Context, req *doma
 		HttpTimeoutMs:         300000, // Default 5 minutes
 		RateLimitEnabled:      false,  // Default disabled
 		RateLimitRPM:          0,      // Default no limit
-		Credentials: []domain.StorageCredential{
-			{
-				User:            req.User,
-				AccessKeyID:     req.AccessKey,
-				SecretAccessKey: req.SecretKey,
-			},
-		},
+		User:                  req.User,
+		AccessKeyID:           req.AccessKey,
+		SecretAccessKey:       req.SecretKey,
 	}
 
 	return s.storageRepo.Create(ctx, storage)
@@ -138,15 +134,10 @@ func (s *StorageService) UpdateStorageByID(ctx context.Context, id string, req *
 	existingStorage.RateLimitEnabled = false
 	existingStorage.RateLimitRPM = 0
 
-	// Update credentials (replace all existing credentials with new one)
-	existingStorage.Credentials = []domain.StorageCredential{
-		{
-			StorageID:       existingStorage.ID,
-			User:            req.User,
-			AccessKeyID:     req.AccessKey,
-			SecretAccessKey: req.SecretKey,
-		},
-	}
+	// Update credentials
+	existingStorage.User = req.User
+	existingStorage.AccessKeyID = req.AccessKey
+	existingStorage.SecretAccessKey = req.SecretKey
 
 	return s.storageRepo.Update(ctx, existingStorage)
 }
