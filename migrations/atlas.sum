@@ -1,3 +1,5 @@
-h1:ASmOAd/ynYGZkEa4125mbG+jNbVLDZQeqyKAA+H4t5g=
+h1:xsZIjxDElZxBuMaBNaCpu6cZAr2A07ZxVFa6La1AnTA=
 20241201000001_initial_schema.sql h1:QBVf9H6q4aF1Iu6MdWve+JC3uzBK/a+27rctkRYXhuY=
-20250919023354_add_description_to_storage.sql h1:dUR1uoGYL9VM/d8QMYpoPek7hJfz/kOIY17wlZ4A/c4=
+20250919085623_add_token_infos_table.sql h1:zWcr/cNzvk7VopOVPzuwHC9bzDKFs+8gfiFyO2/5s+k=
+20250919093856_update_storage_model_fixed.sql h1:iw5owRGywooJboZQQ8W+p/lt9yDh22oPABzZHCIv8tg=
+20250922030216_add_token_fields.sql h1:uWlh79r/p5jOkPYjS8yB+3/h9JVvW2but7N9clDF8Bk=

@@ -69,13 +69,13 @@ definitions:
     type: object
   domain.Storage:
     properties:
+      access_key_id:
+        type: string
       address:
         type: string
-      credentials:
-        items:
-          $ref: '#/definitions/domain.StorageCredential'
-        type: array
       default_region:
+        type: string
+      description:
         type: string
       health_check_interval_ms:
         type: integer
@@ -95,18 +95,55 @@ definitions:
         type: boolean
       rate_limit_rpm:
         type: integer
+      secret_access_key:
+        type: string
+      user:
+        type: string
     type: object
-  domain.StorageCredential:
+  domain.TokenInfoWithValue:
     properties:
-      access_key_id:
+      created_at:
+        type: string
+      description:
+        type: string
+      expires_at:
         type: string
       id:
         type: string
-      secret_access_key:
+      is_active:
+        type: boolean
+      is_system:
+        type: boolean
+      name:
         type: string
-      storage_id:
+      token:
         type: string
-      user:
+      updated_at:
+        type: string
+    type: object
+  domain.TokenRequest:
+    properties:
+      description:
+        example: Token for API access
+        type: string
+      expires_at:
+        example: "2024-12-31T23:59:59Z"
+        type: string
+      name:
+        example: api-client
+        type: string
+    required:
+    - name
+    type: object
+  domain.TokenResponse:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      name:
+        type: string
+      token:
         type: string
     type: object
 host: localhost:8081
@@ -116,6 +153,151 @@ info:
   title: Chorus Controller API
   version: "1.0"
 paths:
+  /auth/revoke:
+    post:
+      consumes:
+      - application/json
+      description: Disables an API token, making it unusable
+      parameters:
+      - description: Token to revoke
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token revoked successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - TokenAuth: []
+      summary: Revoke an API token
+      tags:
+      - auth
+  /auth/token:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new API token for accessing protected endpoints
+      parameters:
+      - description: Token generation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.TokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Generate a new API token
+      tags:
+      - auth
+  /auth/tokens:
+    get:
+      description: Returns a list of system tokens with JWT values (no authentication
+        required)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.TokenInfoWithValue'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List system tokens
+      tags:
+      - auth
+  /auth/tokens/{id}:
+    delete:
+      description: Permanently deletes an API token
+      parameters:
+      - description: Token ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - TokenAuth: []
+      summary: Delete an API token
+      tags:
+      - auth
+  /auth/tokens/detailed:
+    get:
+      description: Returns detailed information about all tokens including JWT values
+        (requires system token)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.TokenInfoWithValue'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - TokenAuth: []
+      summary: List all tokens with values
+      tags:
+      - auth
   /buckets:
     get:
       consumes:
@@ -200,6 +382,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Delete a replication job
       tags:
       - replications
@@ -253,6 +437,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - TokenAuth: []
       summary: Create a new replication job
       tags:
       - replications
@@ -285,6 +471,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Pause a replication job
       tags:
       - replications
@@ -317,6 +505,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Resume a paused replication job
       tags:
       - replications
@@ -350,6 +540,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - TokenAuth: []
       summary: Switch main and follower buckets without downtime
       tags:
       - replications
@@ -398,6 +590,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - TokenAuth: []
       summary: Create a storage configuration
       tags:
       - storages
@@ -422,6 +616,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - TokenAuth: []
       summary: Delete a storage configuration
       tags:
       - storages
@@ -480,6 +676,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - TokenAuth: []
       summary: Update a storage configuration
       tags:
       - storages
@@ -499,4 +697,10 @@ paths:
       - storages
 schemes:
 - http
+securityDefinitions:
+  TokenAuth:
+    description: Type "Token" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

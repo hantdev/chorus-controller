@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/clyso/chorus/proto/gen/go/chorus"
 	"github.com/google/uuid"
+	"github.com/hantdev/chorus-controller/internal/crypto"
 	"github.com/hantdev/chorus-controller/internal/domain"
 	"github.com/hantdev/chorus-controller/internal/errors"
 	"github.com/hantdev/chorus-controller/internal/repository"
@@ -16,13 +17,21 @@ import (
 type StorageService struct {
 	workerClient domain.WorkerClient
 	storageRepo  *repository.StorageDBRepository
+	crypto       *crypto.Crypto
 }
 
 // NewStorageService creates a new storage service
-func NewStorageService(workerClient domain.WorkerClient) *StorageService {
+func NewStorageService(workerClient domain.WorkerClient, encryptionKey string) *StorageService {
+	crypto, err := crypto.New(encryptionKey)
+	if err != nil {
+		// In production, you might want to handle this error more gracefully
+		panic("failed to initialize crypto: " + err.Error())
+	}
+
 	return &StorageService{
 		workerClient: workerClient,
 		storageRepo:  repository.NewStorageDBRepository(),
+		crypto:       crypto,
 	}
 }
 
@@ -61,6 +70,10 @@ func (s *StorageService) ListBuckets(ctx context.Context, req *domain.ListBucket
 
 // CreateStorage persists a storage config
 func (s *StorageService) CreateStorage(ctx context.Context, storage *domain.Storage) error {
+	// Encrypt sensitive data before saving
+	if err := s.encryptStorage(storage); err != nil {
+		return err
+	}
 	return s.storageRepo.Create(ctx, storage)
 }
 
@@ -83,12 +96,29 @@ func (s *StorageService) CreateStorageFromRequest(ctx context.Context, req *doma
 		SecretAccessKey:       req.SecretKey,
 	}
 
+	// Encrypt sensitive data before saving
+	if err := s.encryptStorage(storage); err != nil {
+		return err
+	}
+
 	return s.storageRepo.Create(ctx, storage)
 }
 
 // ListStorageFromDB lists storages from DB
 func (s *StorageService) ListStorageFromDB(ctx context.Context) ([]domain.Storage, error) {
-	return s.storageRepo.List(ctx)
+	storages, err := s.storageRepo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decrypt sensitive data for each storage
+	for i := range storages {
+		if err := s.decryptStorage(&storages[i]); err != nil {
+			return nil, err
+		}
+	}
+
+	return storages, nil
 }
 
 // GetStorageByID retrieves a storage by ID
@@ -105,6 +135,12 @@ func (s *StorageService) GetStorageByID(ctx context.Context, id string) (*domain
 		}
 		return nil, err
 	}
+
+	// Decrypt sensitive data before returning
+	if err := s.decryptStorage(storage); err != nil {
+		return nil, err
+	}
+
 	return storage, nil
 }
 
@@ -139,6 +175,11 @@ func (s *StorageService) UpdateStorageByID(ctx context.Context, id string, req *
 	existingStorage.AccessKeyID = req.AccessKey
 	existingStorage.SecretAccessKey = req.SecretKey
 
+	// Encrypt sensitive data before saving
+	if err := s.encryptStorage(existingStorage); err != nil {
+		return err
+	}
+
 	return s.storageRepo.Update(ctx, existingStorage)
 }
 
@@ -155,6 +196,30 @@ func (s *StorageService) DeleteStorageByID(ctx context.Context, id string) error
 			return errors.NewNotFoundError("storage not found", err)
 		}
 		return err
+	}
+	return nil
+}
+
+// encryptStorage encrypts sensitive fields before saving to database
+func (s *StorageService) encryptStorage(storage *domain.Storage) error {
+	if storage.SecretAccessKey != "" {
+		encrypted, err := s.crypto.Encrypt(storage.SecretAccessKey)
+		if err != nil {
+			return errors.NewInternalServerError("failed to encrypt secret access key", err)
+		}
+		storage.SecretAccessKey = encrypted
+	}
+	return nil
+}
+
+// decryptStorage decrypts sensitive fields after loading from database
+func (s *StorageService) decryptStorage(storage *domain.Storage) error {
+	if storage.SecretAccessKey != "" {
+		decrypted, err := s.crypto.Decrypt(storage.SecretAccessKey)
+		if err != nil {
+			return errors.NewInternalServerError("failed to decrypt secret access key", err)
+		}
+		storage.SecretAccessKey = decrypted
 	}
 	return nil
 }

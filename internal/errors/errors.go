@@ -52,3 +52,7 @@ func NewBadGatewayError(message string, err error) *APIError {
 func NewNotFoundError(message string, err error) *APIError {
 	return NewAPIError(http.StatusNotFound, message, err)
 }
+
+func NewUnauthorizedError(message string, err error) *APIError {
+	return NewAPIError(http.StatusUnauthorized, message, err)
+}

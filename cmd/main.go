@@ -10,6 +10,10 @@
 //	@BasePath	/
 //
 //	@schemes	http
+//	@securityDefinitions.apikey	TokenAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Type "Token" followed by a space and JWT token.
 package main
 
 import (
@@ -44,18 +48,26 @@ func main() {
 
 	// Initialize repository layer
 	workerRepo := repository.NewWorkerRepository(cfg.WorkerGRPCAddr)
+	tokenRepo := repository.NewTokenDBRepository()
 
 	// Initialize service layer
 	replicationService := service.NewReplicationService(workerRepo)
-	storageService := service.NewStorageService(workerRepo)
+	storageService := service.NewStorageService(workerRepo, cfg.EncryptionKey)
+	tokenService := service.NewTokenService(tokenRepo, cfg.JWTSecret, cfg.JWTExpiry)
 
 	// Initialize handler layer
 	healthHandler := handler.NewHealthHandler()
 	storageHandler := handler.NewStorageHandler(storageService)
 	replicationHandler := handler.NewReplicationHandler(replicationService)
+	authHandler := handler.NewAuthHandler(tokenService)
 
 	// Initialize server
-	srv := server.New(healthHandler, storageHandler, replicationHandler, cfg.HTTPPort)
+	srv := server.New(healthHandler, storageHandler, replicationHandler, authHandler, tokenService, cfg.HTTPPort)
+
+	// Initialize system token
+	if err := srv.Initialize(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Configure Swagger runtime options
 	docs.SwaggerInfo.BasePath = "/"

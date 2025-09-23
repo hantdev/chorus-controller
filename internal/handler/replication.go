@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hantdev/chorus-controller/internal/domain"
+	"github.com/hantdev/chorus-controller/internal/middleware"
 )
 
 // ReplicationHandler handles replication-related endpoints
@@ -25,6 +26,7 @@ func NewReplicationHandler(replicationService domain.ReplicationService) *Replic
 // @Tags			replications
 // @Accept			json
 // @Produce		json
+// @Security		TokenAuth
 // @Param			replication	body		domain.CreateReplicationRequest	true	"Replication configuration"
 // @Success		201			{string}	string				"Replication job created successfully"
 // @Failure		400			{object}	map[string]interface{}
@@ -33,13 +35,13 @@ func NewReplicationHandler(replicationService domain.ReplicationService) *Replic
 func (h *ReplicationHandler) CreateReplication(c *gin.Context) {
 	var req domain.CreateReplicationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse(err))
+		c.JSON(http.StatusBadRequest, middleware.ErrorResponse(err))
 		return
 	}
 
 	err := h.replicationService.CreateReplication(c.Request.Context(), &req)
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 
@@ -58,7 +60,7 @@ func (h *ReplicationHandler) CreateReplication(c *gin.Context) {
 func (h *ReplicationHandler) ListReplications(c *gin.Context) {
 	replications, err := h.replicationService.ListReplications(c.Request.Context())
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 
@@ -71,6 +73,7 @@ func (h *ReplicationHandler) ListReplications(c *gin.Context) {
 // @Tags           replications
 // @Accept         json
 // @Produce        json
+// @Security       BearerAuth
 // @Param          replication body domain.ReplicationIdentifier true "Replication identifier"
 // @Success        200 {string} string "Replication paused successfully"
 // @Failure        400 {object} map[string]interface{}
@@ -86,6 +89,7 @@ func (h *ReplicationHandler) PauseReplication(c *gin.Context) {
 // @Tags           replications
 // @Accept         json
 // @Produce        json
+// @Security       BearerAuth
 // @Param          replication body domain.ReplicationIdentifier true "Replication identifier"
 // @Success        200 {string} string "Replication resumed successfully"
 // @Failure        400 {object} map[string]interface{}
@@ -101,6 +105,7 @@ func (h *ReplicationHandler) ResumeReplication(c *gin.Context) {
 // @Tags           replications
 // @Accept         json
 // @Produce        json
+// @Security       BearerAuth
 // @Param          replication body domain.ReplicationIdentifier true "Replication identifier"
 // @Success        200 {string} string "Replication deleted successfully"
 // @Failure        400 {object} map[string]interface{}
@@ -116,6 +121,7 @@ func (h *ReplicationHandler) DeleteReplication(c *gin.Context) {
 // @Tags			replications
 // @Accept			json
 // @Produce		json
+// @Security		TokenAuth
 // @Param			replication	body		domain.ReplicationIdentifier	true	"Replication identifier"
 // @Success		202			{string}	string				"Switch initiated successfully"
 // @Failure		400			{object}	map[string]interface{}
@@ -124,13 +130,13 @@ func (h *ReplicationHandler) DeleteReplication(c *gin.Context) {
 func (h *ReplicationHandler) SwitchZeroDowntime(c *gin.Context) {
 	var id domain.ReplicationIdentifier
 	if err := c.ShouldBindJSON(&id); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse(err))
+		c.JSON(http.StatusBadRequest, middleware.ErrorResponse(err))
 		return
 	}
 
 	err := h.replicationService.SwitchZeroDowntime(c.Request.Context(), &id)
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 
@@ -141,7 +147,7 @@ func (h *ReplicationHandler) SwitchZeroDowntime(c *gin.Context) {
 func (h *ReplicationHandler) replicationAction(c *gin.Context, action string) {
 	var id domain.ReplicationIdentifier
 	if err := c.ShouldBindJSON(&id); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse(err))
+		c.JSON(http.StatusBadRequest, middleware.ErrorResponse(err))
 		return
 	}
 
@@ -156,7 +162,7 @@ func (h *ReplicationHandler) replicationAction(c *gin.Context, action string) {
 	}
 
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 

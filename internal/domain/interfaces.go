@@ -40,3 +40,15 @@ type StorageService interface {
 	UpdateStorageByID(ctx context.Context, id string, req *CreateStorageRequest) error
 	DeleteStorageByID(ctx context.Context, id string) error
 }
+
+// TokenService defines the interface for token management
+type TokenService interface {
+	GenerateToken(ctx context.Context, req *TokenRequest) (*TokenResponse, error)
+	ValidateToken(ctx context.Context, token string) (*TokenInfo, error)
+	ValidateSystemToken(ctx context.Context, token string) error
+	RevokeToken(ctx context.Context, token string) error
+	RevokeTokenByID(ctx context.Context, id string) error
+	ListTokens(ctx context.Context) ([]TokenInfoWithValue, error)
+	ListTokensWithValues(ctx context.Context) ([]TokenInfoWithValue, error)
+	DeleteToken(ctx context.Context, id string) error
+}

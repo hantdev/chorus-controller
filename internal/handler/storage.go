@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hantdev/chorus-controller/internal/domain"
+	"github.com/hantdev/chorus-controller/internal/middleware"
 )
 
 // StorageHandler handles storage-related endpoints
@@ -31,7 +32,7 @@ func NewStorageHandler(storageService domain.StorageService) *StorageHandler {
 func (h *StorageHandler) ListStorages(c *gin.Context) {
 	resp, err := h.storageService.ListStorages(c.Request.Context())
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 
@@ -54,13 +55,13 @@ func (h *StorageHandler) ListStorages(c *gin.Context) {
 func (h *StorageHandler) ListBuckets(c *gin.Context) {
 	var req domain.ListBucketsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse(err))
+		c.JSON(http.StatusBadRequest, middleware.ErrorResponse(err))
 		return
 	}
 
 	resp, err := h.storageService.ListBuckets(c.Request.Context(), &req)
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 
@@ -76,6 +77,7 @@ func (h *StorageHandler) ListBuckets(c *gin.Context) {
 // @Tags			storages
 // @Accept			json
 // @Produce		json
+// @Security		TokenAuth
 // @Param			request			body		domain.CreateStorageRequest	true	"Storage creation request"
 // @Success		201				{string}	string	"Storage created successfully"
 // @Failure		400				{object}	map[string]interface{}
@@ -83,11 +85,11 @@ func (h *StorageHandler) ListBuckets(c *gin.Context) {
 func (h *StorageHandler) CreateStorage(c *gin.Context) {
 	var req domain.CreateStorageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse(err))
+		c.JSON(http.StatusBadRequest, middleware.ErrorResponse(err))
 		return
 	}
 	if err := h.storageService.CreateStorageFromRequest(c.Request.Context(), &req); err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 	c.Status(http.StatusCreated)
@@ -102,7 +104,7 @@ func (h *StorageHandler) CreateStorage(c *gin.Context) {
 func (h *StorageHandler) ListStoragesDB(c *gin.Context) {
 	items, err := h.storageService.ListStorageFromDB(c.Request.Context())
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, items)
@@ -120,7 +122,7 @@ func (h *StorageHandler) GetStorage(c *gin.Context) {
 	id := c.Param("id")
 	storage, err := h.storageService.GetStorageByID(c.Request.Context(), id)
 	if err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, storage)
@@ -132,6 +134,7 @@ func (h *StorageHandler) GetStorage(c *gin.Context) {
 // @Tags			storages
 // @Accept			json
 // @Produce		json
+// @Security		TokenAuth
 // @Param			id			path		string	true	"Storage ID"
 // @Param			request			body		domain.CreateStorageRequest	true	"Storage update request"
 // @Success		200				{string}	string	"Storage updated successfully"
@@ -142,11 +145,11 @@ func (h *StorageHandler) UpdateStorage(c *gin.Context) {
 	id := c.Param("id")
 	var req domain.CreateStorageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse(err))
+		c.JSON(http.StatusBadRequest, middleware.ErrorResponse(err))
 		return
 	}
 	if err := h.storageService.UpdateStorageByID(c.Request.Context(), id, &req); err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -157,6 +160,7 @@ func (h *StorageHandler) UpdateStorage(c *gin.Context) {
 // @Description	Deletes a storage and all its credentials
 // @Tags			storages
 // @Produce		json
+// @Security		TokenAuth
 // @Param			id			path		string	true	"Storage ID"
 // @Success		200				{string}	string	"Storage deleted successfully"
 // @Failure		404				{object}	map[string]interface{}
@@ -164,7 +168,7 @@ func (h *StorageHandler) UpdateStorage(c *gin.Context) {
 func (h *StorageHandler) DeleteStorage(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.storageService.DeleteStorageByID(c.Request.Context(), id); err != nil {
-		HandleError(c, err)
+		middleware.HandleError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)

@@ -15,6 +15,225 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/revoke": {
+            "post": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
+                "description": "Disables an API token, making it unusable",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Revoke an API token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token to revoke",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token revoked successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/token": {
+            "post": {
+                "description": "Creates a new API token for accessing protected endpoints",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Generate a new API token",
+                "parameters": [
+                    {
+                        "description": "Token generation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.TokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/tokens": {
+            "get": {
+                "description": "Returns a list of system tokens with JWT values (no authentication required)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "List system tokens",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.TokenInfoWithValue"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/tokens/detailed": {
+            "get": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
+                "description": "Returns detailed information about all tokens including JWT values (requires system token)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "List all tokens with values",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.TokenInfoWithValue"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/tokens/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
+                "description": "Permanently deletes an API token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Delete an API token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/buckets": {
             "get": {
                 "description": "Returns a list of buckets that can be used for replication jobs between specified storages",
@@ -129,6 +348,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
                 "description": "Configures a new replication job for specified buckets between storages",
                 "consumes": [
                     "application/json"
@@ -175,6 +399,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes a replication job",
                 "consumes": [
                     "application/json"
@@ -223,6 +452,11 @@ const docTemplate = `{
         },
         "/replications/pause": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Pauses an active replication job",
                 "consumes": [
                     "application/json"
@@ -271,6 +505,11 @@ const docTemplate = `{
         },
         "/replications/resume": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Resumes a paused replication job",
                 "consumes": [
                     "application/json"
@@ -319,6 +558,11 @@ const docTemplate = `{
         },
         "/replications/switch/zero-downtime": {
             "post": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
                 "description": "Switches main and follower buckets for a replication job without blocking writes",
                 "consumes": [
                     "application/json"
@@ -396,6 +640,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
                 "description": "Creates a storage with simplified parameters. All other settings use default values.",
                 "consumes": [
                     "application/json"
@@ -492,6 +741,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
                 "description": "Updates an existing storage with new parameters",
                 "consumes": [
                     "application/json"
@@ -545,6 +799,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "TokenAuth": []
+                    }
+                ],
                 "description": "Deletes a storage and all its credentials",
                 "produces": [
                     "application/json"
@@ -678,16 +937,16 @@ const docTemplate = `{
         "domain.Storage": {
             "type": "object",
             "properties": {
+                "access_key_id": {
+                    "type": "string"
+                },
                 "address": {
                     "type": "string"
                 },
-                "credentials": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/domain.StorageCredential"
-                    }
-                },
                 "default_region": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "health_check_interval_ms": {
@@ -716,28 +975,91 @@ const docTemplate = `{
                 },
                 "rate_limit_rpm": {
                     "type": "integer"
-                }
-            }
-        },
-        "domain.StorageCredential": {
-            "type": "object",
-            "properties": {
-                "access_key_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
                 },
                 "secret_access_key": {
-                    "type": "string"
-                },
-                "storage_id": {
                     "type": "string"
                 },
                 "user": {
                     "type": "string"
                 }
             }
+        },
+        "domain.TokenInfoWithValue": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_system": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.TokenRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Token for API access"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "example": "2024-12-31T23:59:59Z"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "api-client"
+                }
+            }
+        },
+        "domain.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "TokenAuth": {
+            "description": "Type \"Token\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
